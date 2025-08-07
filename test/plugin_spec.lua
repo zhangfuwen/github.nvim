@@ -8,89 +8,16 @@ myplugin.setup({
 })
 --myplugin.create()
 --
+--require('telescope').load_extension('github_repos')
+-- telescope = require('telescope')
+-- telescope.register_extension {
+--   exports = {
+--     github_repos = require('github_nvim.pickers.github_repos')
+--   }
+-- }
+-- telescope.load_extension('github_repos')
+-- picker = require("github_nvim.pickers.github_repos")
+-- if picker then
+--     picker()
+-- end
 
-function my_promptYesNo(message, on_yes, on_no, on_cancel)
-    local Menu = require("nui.menu")
---    local event = require("nui.utils.autocmd").event
-    on_no = on_no or function() end
-    on_cancel = on_cancel or function() end
-    local menu = Menu({
-        position = "50%",
-        size = {
-            width = 25,
-            height = 5,
-        },
-        border = {
-            style = "single",
-            text = {
-                top = message,
-                top_align = "center",
-            },
-        },
-        win_options = {
-            winhighlight = "Normal:Normal,FloatBorder:Normal",
-        },
-    }, {
-        lines = {
-            Menu.item("Yes (y/Y)", { id = 1 }),
-            Menu.item("No (n/N)", { id = 2 }),
-        },
-        max_width = 20,
-        keymap = {
-            focus_next = { "j", "<Down>", "<Tab>" },
-            focus_prev = { "k", "<Up>", "<S-Tab>" },
-            close = { "<Esc>", "<C-c>" },
-            submit = { "<CR>", "<Space>" },
-        },
-        on_close = function()
-            on_cancel()
-        end,
-        on_submit = function(item)
-            if item.id == 1 then
-                on_yes()
-            else
-                on_no()
-            end
-            print("Menu Submitted: ", item.text)
-        end,
-    })
-
-    -- mount the component
-    vim.cmd("normal! <C-\\><C-n>")
-    menu:mount()
-end
-
---my_promptYesNo("hello")
-
-local Input = require("nui.input")
-
-local input_box = Input({
-    position = "50%",
-    size = {
-        width = 20,
-    },
-    border = {
-        style = "single",
-        text = {
-            top = "clone: (user/repo)",
-            top_align = "center",
-        },
-    },
-    win_options = {
-        winhighlight = "Normal:Normal,FloatBorder:Normal",
-    },
-}, {
-    prompt = "> ",
-    default_value = "",
-    on_close = function()
-    end,
-    on_submit = function(value)
-        print("Input Submitted: " .. value)
-    end,
-    on_change = function(value)
-    end,
-})
-input_box:map("i", "<c-p>", function() 
-    my_promptYesNo("hello?")
-end)
-input_box:mount()

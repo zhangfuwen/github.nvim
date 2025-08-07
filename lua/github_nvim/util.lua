@@ -1,16 +1,16 @@
 M = {}
 function M.mkdir_p(path)
-    if vim.loop then
-        -- Neovim 0.9+：使用 vim.loop
-        local ok, err = vim.loop.fs_mkdir(path, 0755)
-        if not ok and err ~= "EEXIST" then
-            print("Error:", err)
-        end
-    else
+    -- if vim.loop then
+    --     -- Neovim 0.9+：使用 vim.loop
+    --     local ok, err = vim.loop.fs_mkdir(path, 0755)
+    --     if not ok and err ~= "EEXIST" then
+    --         print("Error:", err)
+    --     end
+    -- else
         -- Neovim < 0.9：用 shell 命令
-        local cmd = "mkdir -p " .. path
-        vim.system({ "bash", "-c", cmd })
-    end
+    local cmd = "mkdir -p " .. path
+    vim.system({ "bash", "-c", cmd })
+    -- end
 end
 
 function M.rm_rf(path)
