@@ -1,0 +1,325 @@
+util = require("github_nvim.util")
+
+M = {}
+--gh repo create github.nvim --template nvimdev/nvim-plugin-template --public --clone
+
+
+function M.create(config)
+    local is_repo_public = true
+    local will_clone = true
+    local use_template = false
+    local repo_input = ""
+    local template_input = ""
+    local message = "no message"
+    local messageHighlight = "SpecialKey"
+
+    local Popup = require("nui.popup")
+    local Layout = require("nui.layout")
+    local Input = require("nui.input")
+    local NuiLine = require("nui.line")
+    local NuiText = require("nui.text")
+
+    local create_input_box = Input({
+        position = "50%",
+        size = {
+            width = 20,
+        },
+        border = {
+            style = "single",
+            text = {
+                top = "clone: (user/repo)",
+                top_align = "center",
+            },
+        },
+        win_options = {
+            winhighlight = "Normal:Normal,FloatBorder:Normal",
+        },
+    }, {
+        prompt = "> ",
+        default_value = repo_input,
+        on_close = function()
+            print("Input Closed!")
+        end,
+        on_submit = function(value)
+            print("Input Submitted: " .. value)
+        end,
+        on_change = function(value)
+            repo_input = value
+        end,
+    })
+    local template_input_box = Input({
+        position = "50%",
+        size = {
+            width = 20,
+        },
+        border = {
+            style = "single",
+            text = {
+                top = "template: (user/repo)",
+                top_align = "center",
+            },
+        },
+        win_options = {
+            winhighlight = "Normal:Normal,FloatBorder:Normal",
+        },
+    }, {
+        prompt = "> ",
+        default_value = template_input,
+        on_close = function()
+            print("Input Closed!")
+        end,
+        on_submit = function(value)
+            print("Input Submitted: " .. value)
+        end,
+        on_change = function(value)
+            template_input = value
+        end,
+    })
+
+    local popup_one = Popup({
+        enter = true,
+        border = "single",
+    })
+    local base_layout_box = Layout.Box({
+        Layout.Box(create_input_box, { size = "10%" }),
+        Layout.Box(popup_one, { size = "40%" }),
+    }, { dir = "col" })
+    local template_layout_box = Layout.Box({
+        Layout.Box(create_input_box, { size = "10%" }),
+        Layout.Box(template_input_box, { size = "10%" }),
+        Layout.Box(popup_one, { size = "40%" }),
+    }, { dir = "col" })
+
+    local layout = Layout(
+        {
+            position = "50%",
+            size = {
+                width = 80,
+                height = "60%",
+            },
+        },
+        base_layout_box
+    )
+
+    local function set_hints(keymap, linenr)
+        local line = NuiLine()
+        line:append(keymap.lhs, "SpecialKey")
+        line:append("\t")
+        line:append(keymap.opts.desc)
+        local bufnr, ns_id, linenr_start = popup_one.bufnr, -1, linenr
+        line:render(bufnr, ns_id, linenr_start)
+    end
+
+    local function update_status()
+        local line = NuiLine()
+        line:append("Options: ")
+        local bufnr, ns_id, linenr_start = popup_one.bufnr, -1, 1
+        line:render(bufnr, ns_id, linenr_start)
+
+        line = NuiLine()
+        line:append("  Visibility: ")
+        line:append(is_repo_public and "public" or "private", "Error")
+        line:append(" <c-p>", "SpecialKey")
+        bufnr, ns_id, linenr_start = popup_one.bufnr, -1, 2
+        line:render(bufnr, ns_id, linenr_start)
+
+        line = NuiLine()
+        line:append("  Use template: ")
+        line:append(use_template and template_input or "no", "Error")
+        line:append(" <c-t>", "SpecialKey")
+        bufnr, ns_id, linenr_start = popup_one.bufnr, -1, 3
+        line:render(bufnr, ns_id, linenr_start)
+
+        line = NuiLine()
+        line:append("  Clone after creation: ")
+        line:append(will_clone and "yes" or "no", "Error")
+        line:append(" <c-o>", "SpecialKey")
+        bufnr, ns_id, linenr_start = popup_one.bufnr, -1, 4
+        line:render(bufnr, ns_id, linenr_start)
+
+        --NuiLine({ NuiText("one"), NuiText("two", "Error")}):render(bufnr, ns_id, 3)
+        NuiLine({ NuiText("") }):render(bufnr, ns_id, 5)
+        NuiLine({ NuiText("Message: "), NuiText(string.gsub(message, "\n", ""), messageHighlight) }):render(bufnr, ns_id,
+            6)
+        NuiLine({ NuiText("") }):render(bufnr, ns_id, 7)
+
+        line = NuiLine()
+        line:append("Keymaps: ")
+        bufnr, ns_id, linenr_start = popup_one.bufnr, -1, 8
+        line:render(bufnr, ns_id, linenr_start)
+    end
+
+
+    local function update_message(msg, hl)
+        message = msg
+        messageHighlight = hl
+        update_status()
+    end
+
+    local function do_create(user_name, repo_name)
+        local user_dir = config.github_dir .. config.sep .. user_name
+        local repo_dir = user_dir .. config.sep .. repo_name
+        if util.path_exists(repo_dir) then
+            update_message("Error: repo exists", "Error")
+            util.promptYesNo("remove local and retry?", function()
+                util.rm_rf(repo_dir)
+                do_create(user_name, repo_name)
+            end)
+            return
+        end
+
+        if not util.path_exists(user_dir) then
+            util.mkdir_p(user_dir)
+        end
+
+        local clone_command = "gh repo clone " .. user_name .. config.sep .. repo_name
+        message = "running command " .. clone_command .. " ..."
+        update_status()
+
+        local function on_command_exit(result)
+            vim.schedule(function()
+                if result.code == 0 then
+                    update_message("success, path: " .. repo_dir, "Error")
+                    if config.on_clone_success then
+                        util.promptYesNo("close window and open it?", function()
+                            layout:unmount()
+                            config.on_clone_success(repo_dir)
+                        end)
+                    else
+                        util.promptYesNo("close window?", function()
+                            layout:unmount()
+                        end)
+                    end
+                else
+                    update_message("failed, reason: " .. result.stderr, "Error")
+                    util.promptYesNo("remove local and retry?", function()
+                        util.rm_rf(repo_dir)
+                        do_create(user_name, repo_name)
+                    end)
+                end
+            end
+            )
+        end
+
+
+        vim.system({ "bash", "-c", clone_command }, {
+            text = true,
+            cwd = user_dir,
+        }, on_command_exit)
+
+        -- 错误处理
+    end
+    local function handle_create()
+        local user_name = ""
+        local repo_name = ""
+        local tokens = util.mysplit(repo_input, "/")
+        if #tokens > 2 or #tokens <= 1 then
+            message = "Error: invalid input, should be user/repo"
+            messageHighlight = "Error"
+            update_status()
+            return
+        elseif #tokens == 2 then
+            user_name = tokens[1]
+            repo_name = tokens[2]
+            --        elseif #tokens == 1 then
+            --            repo_name = tokens[1]
+        end
+        message = user_name and string.format("user_name:%s, repo:%s", user_name, repo_name) or "user_name: " ..
+            user_name
+        messageHighlight = "Error"
+        update_status()
+
+        print(string.format("repo: %s, visibility: %s", repo_input, is_repo_public and "public" or "private"))
+        do_clone(user_name, repo_name)
+    end
+
+
+
+    update_status()
+    keymaps = {
+        {
+            mode = { "i", "n" },
+            lhs = "<c-p>",
+            rhs = function()
+                is_repo_public = not is_repo_public
+                update_status()
+            end,
+            opts = {
+                desc = "change visibility"
+            }
+
+        },
+        {
+            mode = { "i", "n" },
+            lhs = "<c-o>",
+            rhs = function()
+                will_clone = not will_clone
+                update_status()
+            end,
+            opts = {
+                desc = "change clone"
+            }
+
+        },
+        {
+            mode = { "i", "n" },
+            lhs = "<c-t>",
+            rhs = function()
+                use_template = not use_template
+                if (use_template) then
+                    layout:update(template_layout_box)
+                else
+                    layout:update(base_layout_box)
+                end
+                update_status()
+            end,
+            opts = {
+                desc = "toggle use template"
+            }
+
+        },
+        {
+            mode = { "i", "n" },
+            lhs = "<c-g>",
+            rhs = handle_create,
+            opts = {
+                desc = "do create"
+            }
+
+        },
+        {
+            mode = { "i" },
+            lhs = "<cr>",
+            rhs = handle_create,
+            opts = {
+                desc = "do create"
+            }
+
+        },
+        {
+            mode = { "i", "n" },
+            lhs = "<c-c>",
+            rhs = function()
+                print("close")
+                layout:unmount()
+            end,
+            opts = {
+                desc = "close window"
+            }
+
+        }
+    }
+
+    for i, keymap in ipairs(keymaps) do
+        for _, mode in ipairs(keymap.mode) do
+            create_input_box:map(mode, keymap.lhs, keymap.rhs, keymap.opts)
+            template_input_box:map(mode, keymap.lhs, keymap.rhs, keymap.opts)
+            popup_one:map(mode, keymap.lhs, keymap.rhs, keymap.opts)
+        end
+        set_hints(keymap, 8 + i)
+    end
+
+    layout:mount()
+end
+
+return M

@@ -1,15 +1,48 @@
-vim.opt.runtimepath:prepend("/home/liutao/Code/github.com/zhangfuwen/github.nvim/")
-myplugin = require("github_nvim")
-myplugin.setup({
-    on_clone_success = function(repo_path)
-        vim.cmd("FzfLua files cwd="..repo_path)
-
+M = {}
+function M.mkdir_p(path)
+    if vim.loop then
+        -- Neovim 0.9+：使用 vim.loop
+        local ok, err = vim.loop.fs_mkdir(path, 0755)
+        if not ok and err ~= "EEXIST" then
+            print("Error:", err)
+        end
+    else
+        -- Neovim < 0.9：用 shell 命令
+        local cmd = "mkdir -p " .. path
+        vim.system({ "bash", "-c", cmd })
     end
-})
---myplugin.create()
---
+end
 
-function my_promptYesNo(message, on_yes, on_no, on_cancel)
+function M.rm_rf(path)
+    local cmd = "rm -rf " .. path
+    local result = vim.system({ "bash", "-c", cmd }):wait()
+    return result.code
+end
+
+function M.mysplit(inputstr, sep)
+    -- if sep is null, set it as space
+    if sep == nil then
+        sep = '%s'
+    end
+    -- define an array
+    local t = {}
+    -- split string based on sep
+    for str in string.gmatch(inputstr, '([^' .. sep .. ']+)')
+    do
+        -- insert the substring in table
+        table.insert(t, str)
+    end
+    -- return the array
+    return t
+end
+
+
+function M.path_exists(path)
+    local stat = vim.loop.fs_stat(path)
+    return stat ~= nil
+end
+
+function M.promptYesNo(message, on_yes, on_no, on_cancel)
     local Menu = require("nui.menu")
 --    local event = require("nui.utils.autocmd").event
     on_no = on_no or function() end
@@ -60,37 +93,5 @@ function my_promptYesNo(message, on_yes, on_no, on_cancel)
     menu:mount()
 end
 
---my_promptYesNo("hello")
 
-local Input = require("nui.input")
-
-local input_box = Input({
-    position = "50%",
-    size = {
-        width = 20,
-    },
-    border = {
-        style = "single",
-        text = {
-            top = "clone: (user/repo)",
-            top_align = "center",
-        },
-    },
-    win_options = {
-        winhighlight = "Normal:Normal,FloatBorder:Normal",
-    },
-}, {
-    prompt = "> ",
-    default_value = "",
-    on_close = function()
-    end,
-    on_submit = function(value)
-        print("Input Submitted: " .. value)
-    end,
-    on_change = function(value)
-    end,
-})
-input_box:map("i", "<c-p>", function() 
-    my_promptYesNo("hello?")
-end)
-input_box:mount()
+return M
