@@ -4,6 +4,7 @@ M = {}
 
 
 function M.clone(config)
+    print(vim.inspect(config))
     is_repo_public = true
     message = "no message"
     messageHighlight = "SpecialKey"
@@ -116,6 +117,7 @@ function M.clone(config)
         end
 
         if not util.path_exists(user_dir) then
+            print("making user_dir "..user_dir)
             util.mkdir_p(user_dir)
         end
 
@@ -128,18 +130,18 @@ function M.clone(config)
                 if result.code == 0 then
                     update_message("success, path: ".. repo_dir, "Error")
                     if config.on_clone_success then 
-                        promptYesNo("close window and open it?", function()
+                        util.promptYesNo("close window and open it?", function()
                             layout:unmount()
                             config.on_clone_success(repo_dir)
                         end)
                     else
-                        promptYesNo("close window?", function() 
+                        util.promptYesNo("close window?", function() 
                             layout:unmount()
                         end)
                     end
                 else
                     update_message("failed, reason: " .. result.stderr, "Error")
-                    promptYesNo("remove local and retry?", function()
+                    util.promptYesNo("remove local and retry?", function()
                         util.rm_rf(repo_dir)
                         do_clone(user_name, repo_name)
                     end)
