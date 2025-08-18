@@ -110,9 +110,10 @@ function M.save(cache_name, key, results, ttl)
         print("❌ Failed to write cache file:", file)
         return
     end
+    print("file is: ", vim.inspect(file))
 
     local content = vim.json.encode(data)
-    print("content is " .. content)
+--    print("content is " .. content)
     local err = f:write(content)
     print(vim.inspect(err))
     if err then

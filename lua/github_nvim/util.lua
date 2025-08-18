@@ -7,7 +7,7 @@ function M.mkdir_p(path)
     --         print("Error:", err)
     --     end
     -- else
-        -- Neovim < 0.9：用 shell 命令
+    -- Neovim < 0.9：用 shell 命令
     local cmd = "mkdir -p " .. path
     vim.system({ "bash", "-c", cmd })
     -- end
@@ -36,7 +36,6 @@ function M.mysplit(inputstr, sep)
     return t
 end
 
-
 function M.path_exists(path)
     local stat = vim.loop.fs_stat(path)
     return stat ~= nil
@@ -44,7 +43,7 @@ end
 
 function M.promptYesNo(message, on_yes, on_no, on_cancel)
     local Menu = require("nui.menu")
---    local event = require("nui.utils.autocmd").event
+    --    local event = require("nui.utils.autocmd").event
     on_no = on_no or function() end
     on_cancel = on_cancel or function() end
     local menu = Menu({
@@ -93,5 +92,59 @@ function M.promptYesNo(message, on_yes, on_no, on_cancel)
     menu:mount()
 end
 
+function M.get_os()
+    if vim.fn.has("win32") == 1 then
+        return "windows"
+    elseif vim.fn.has("mac") == 1 then
+        return "macos"
+    elseif vim.fn.has("unix") == 1 then
+        if vim.env.WSL_DISTRO_NAME then
+            return "wsl"
+        elseif vim.env.SHELL and vim.env.SHELL:match("wsl") then
+            return "wsl"
+        elseif vim.env.MSYSTEM and vim.env.MSYSTEM:match("MINGW") then
+            return "msys2"
+        else
+            return "linux"
+        end
+    else
+        return "unknown"
+    end
+end
+
+-- Optional: Get OS name as string
+function M.is_windows() return M.get_os() == "windows" end
+
+function M.is_macos() return M.get_os() == "macos" end
+
+function M.is_linux() return M.get_os() == "linux" end
+
+function M.is_wsl() return M.get_os() == "wsl" end
+
+function M.is_msys2() return M.get_os() == "msys2" end
+
+function M.open_url(url)
+    local os = M.get_os()
+
+    if os == "macos" then
+        vim.fn.system("open " .. vim.fn.shellescape(url))
+    elseif os == "windows" or os == "msys2" then
+        vim.fn.system("start " .. vim.fn.shellescape(url))
+    elseif os == "wsl" then
+        -- Try wslview first (opens in Windows browser)
+        local success, _ = pcall(vim.fn.system, "wslview --version")
+        if success then
+            vim.fn.system("wslview " .. vim.fn.shellescape(url))
+        else
+            -- Fallback: try 'start' via Windows host
+            -- This requires 'wsl.exe' to be able to run Windows commands
+            vim.fn.system("wsl.exe cmd.exe /c start " .. vim.fn.shellescape(url))
+        end
+    elseif os == "linux" then
+        vim.fn.system("xdg-open " .. vim.fn.shellescape(url))
+    else
+        print("Unsupported OS:", os)
+    end
+end
 
 return M
