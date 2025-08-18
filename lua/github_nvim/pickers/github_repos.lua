@@ -24,12 +24,10 @@ function get_github_repos_cached(skip_load_from_cache)
     if not skip_load_from_cache then
         local cached_result = cache.load(cache_ns, cache_key)
         if cached_result then
-            print("cache hit")
             return cached_result
         end
     end
     local items = util.get_github_repos()
-    print("cache save")
     cache.save(cache_ns, cache_key, items)
     return items
 end
