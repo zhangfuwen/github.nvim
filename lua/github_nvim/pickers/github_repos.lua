@@ -44,7 +44,7 @@ local function entry_maker1(entry)
     local name = entry.value
     local local_path = github_dir .. sep .. name
     local local_exists = util.path_exists(local_path) and true or false
-    local local_icon = local_exists and " 💾Local" or " 🌐"
+    local local_icon = local_exists and "💾" or "🌐"
     if filter == "local" and not local_exists then
         return nil
     end
@@ -54,7 +54,7 @@ local function entry_maker1(entry)
     end
     return {
         value = entry.value,
-        display = entry.display .. " " .. local_icon,
+        display = local_icon .. " ".. entry.display .. " ",
         ordinal = entry.value,
         is_private = entry.isPrivate,
         is_fork = entry.isFork,
@@ -81,13 +81,16 @@ local finder = finders.new_table({
 
 local function selection_open_project()
     local selection = action_state.get_selected_entry()
-    local local_path = selection.local_path
-    local local_exists = selection.local_exists
+    local github_dir = config.github_dir
+    local sep = config.sep
+    local name = selection.value
+    local local_path = github_dir .. sep .. name
+    local local_exists = util.path_exists(local_path)
 
     if local_exists then
         util.open_project(local_path)
     else
-        vim.notify("Selected:", selection.value, " local_path: ", local_path)
+        vim.notify("Selected:" .. selection.value .. " local_path: " .. local_path)
     end
 end
 
