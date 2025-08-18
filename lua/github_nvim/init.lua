@@ -1,16 +1,6 @@
 local M = {}
 local config = require("github_nvim.config")
 
-
--- M.github_repos = require('github_nvim.pickers.github_repos')
--- local telescope = require("telescope")
--- telescope.register_extension {
---   exports = {
---     github_repos = require('github_nvim/pickers/github_repos')
---   }
--- }
-require('telescope').load_extension('github_repos')
-
 function M.setup(options)
     setmetatable(M, {
         __newindex = config.set,

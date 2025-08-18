@@ -13,6 +13,10 @@ function M.mkdir_p(path)
     -- end
 end
 
+function M.open_project(dir)
+    vim.cmd("Telescope find_files cwd="..dir)
+end
+
 function M.rm_rf(path)
     local cmd = "rm -rf " .. path
     local result = vim.system({ "bash", "-c", cmd }):wait()
@@ -146,5 +150,47 @@ function M.open_url(url)
         print("Unsupported OS:", os)
     end
 end
+
+M.plugin_name = "github_nvim"
+
+function M.get_github_repos()
+    local handle = io.popen(
+        'gh repo list -L 200 --json nameWithOwner,description,isPrivate,isFork,isTemplate 2>/dev/null')
+    local result = handle:read('*a')
+    handle:close()
+
+    if result == '' then
+        return {}
+    end
+
+    local ok, json = pcall(vim.json.decode, result)
+    if not ok then
+        print("Error parsing GitHub repos: " .. tostring(json))
+        return {}
+    end
+
+    local items = {}
+
+    for _, repo in ipairs(json) do
+        local name = repo.nameWithOwner
+        local desc = repo.description or ""
+        local is_private = repo.isPrivate and "🔒" or ""
+        local is_fork = repo.isFork and "♻️" or ""
+        local is_template = repo.isTemplate and "📦" or ""
+
+        local display = string.format("%s %s", name, is_private .. is_fork .. is_template)
+        table.insert(items, {
+            value = name,
+            display = display,
+            description = desc,
+            is_private = repo.isPrivate,
+            is_fork = repo.isFork,
+            is_template = repo.isTemplate,
+        })
+    end
+
+    return items
+end
+
 
 return M

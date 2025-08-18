@@ -1,14 +1,11 @@
 util = require("github_nvim.util")
+gh = require("github_nvim.gh")
 
 M = {}
 
 
 function M.clone(config)
-    print(vim.inspect(config))
-    is_repo_public = true
-    message = "no message"
-    messageHighlight = "SpecialKey"
-    repo_input = ""
+    local repo_input = ""
     local Popup = require("nui.popup")
     local Layout = require("nui.layout")
     local Input = require("nui.input")
@@ -35,10 +32,8 @@ function M.clone(config)
         prompt = "> ",
         default_value = repo_input,
         on_close = function()
-            print("Input Closed!")
         end,
         on_submit = function(value)
-            print("Input Submitted: " .. value)
         end,
         on_change = function(value)
             repo_input = value
@@ -61,25 +56,8 @@ function M.clone(config)
 
     local function update_status()
         local line = NuiLine()
-        line:append("Options: ")
-        local bufnr, ns_id, linenr_start = popup_one.bufnr, -1, 1
-        line:render(bufnr, ns_id, linenr_start)
-
-        line = NuiLine()
-        line:append("  Visibility: ")
-        line:append(is_repo_public and "public" or "private", "Error")
-        line:append(" <c-p>", "SpecialKey")
-        local bufnr, ns_id, linenr_start = popup_one.bufnr, -1, 2
-        line:render(bufnr, ns_id, linenr_start)
-
-        --NuiLine({ NuiText("one"), NuiText("two", "Error")}):render(bufnr, ns_id, 3)
-        NuiLine({ NuiText("") }):render(bufnr, ns_id, 3)
-        NuiLine({ NuiText("Message: "), NuiText(string.gsub(message, "\n", ""), messageHighlight) }):render(bufnr, ns_id, 4)
-        NuiLine({ NuiText("") }):render(bufnr, ns_id, 5)
-
-        line = NuiLine()
         line:append("Keymaps: ")
-        local bufnr, ns_id, linenr_start = popup_one.bufnr, -1, 6
+        local bufnr, ns_id, linenr_start = popup_one.bufnr, -1, 1
         line:render(bufnr, ns_id, linenr_start)
     end
 
@@ -97,67 +75,6 @@ function M.clone(config)
         }, { dir = "col" })
     )
 
-    local function update_message(msg, hl)
-        message = msg
-        messageHighlight = hl
-        update_status()
-    end
-
-    local function do_clone(user_name, repo_name)
-        local user_dir = config.github_dir .. config.sep .. user_name
-        local repo_dir = user_dir .. config.sep .. repo_name
-        if util.path_exists(repo_dir) then
-            update_message("Error: repo exists", "Error")
-            util.promptYesNo("remove local and retry?", function()
-                local code = util.rm_rf(repo_dir)
-                --                print(string.format("rm command returns %d", code))
-                do_clone(user_name, repo_name)
-            end)
-            return
-        end
-
-        if not util.path_exists(user_dir) then
-            print("making user_dir "..user_dir)
-            util.mkdir_p(user_dir)
-        end
-
-        local clone_command = "gh repo clone " .. user_name .. config.sep .. repo_name
-        message = "running command " .. clone_command .. " ..."
-        update_status()
-
-        local function on_command_exit(result)
-            vim.schedule(function()
-                if result.code == 0 then
-                    update_message("success, path: ".. repo_dir, "Error")
-                    if config.on_clone_success then 
-                        util.promptYesNo("close window and open it?", function()
-                            layout:unmount()
-                            config.on_clone_success(repo_dir)
-                        end)
-                    else
-                        util.promptYesNo("close window?", function() 
-                            layout:unmount()
-                        end)
-                    end
-                else
-                    update_message("failed, reason: " .. result.stderr, "Error")
-                    util.promptYesNo("remove local and retry?", function()
-                        util.rm_rf(repo_dir)
-                        do_clone(user_name, repo_name)
-                    end)
-                end
-            end
-            )
-        end
-
-
-        vim.system({ "bash", "-c", clone_command }, {
-            text = true,
-            cwd = user_dir,
-        }, on_command_exit)
-
-        -- 错误处理
-    end
     local function handle_clone()
         local user_name = ""
         local repo_name = ""
@@ -178,8 +95,16 @@ function M.clone(config)
         messageHighlight = "Error"
         update_status()
 
-        print(string.format("repo: %s, visibility: %s", repo_input, is_repo_public and "public" or "private"))
-        do_clone(user_name, repo_name)
+        gh.do_clone(config, user_name, repo_name, {
+            on_success = function(repo_dir)
+                layout:unmount()
+                util.open_project(repo_dir)
+            end,
+            on_fail = function()
+                layout:unmount()
+            end
+
+        })
     end
     --gh repo create github.nvim --template nvimdev/nvim-plugin-template --public --clone
 
@@ -187,18 +112,6 @@ function M.clone(config)
 
     update_status()
     keymaps = {
-        {
-            mode = { "i", "n" },
-            lhs = "<c-p>",
-            rhs = function()
-                is_repo_public = not is_repo_public
-                update_status()
-            end,
-            opts = {
-                desc = "change visibility"
-            }
-
-        },
         {
             mode = { "i", "n" },
             lhs = "<c-g>",
@@ -221,7 +134,17 @@ function M.clone(config)
             mode = { "i", "n" },
             lhs = "<c-c>",
             rhs = function()
-                print("close")
+                layout:unmount()
+            end,
+            opts = {
+                desc = "close window"
+            }
+
+        },
+        {
+            mode = { "i", "n" },
+            lhs = "<Esc>",
+            rhs = function()
                 layout:unmount()
             end,
             opts = {
@@ -236,11 +159,10 @@ function M.clone(config)
             clone_input:map(mode, keymap.lhs, keymap.rhs, keymap.opts)
             popup_one:map(mode, keymap.lhs, keymap.rhs, keymap.opts)
         end
-        set_hints(keymap, 6 + i)
+        set_hints(keymap, 1 + i)
     end
 
     layout:mount()
 end
-
 
 return M

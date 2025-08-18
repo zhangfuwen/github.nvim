@@ -27,7 +27,7 @@ function M.create(config)
         border = {
             style = "single",
             text = {
-                top = "clone: (user/repo)",
+                top = "create: (user/repo)",
                 top_align = "center",
             },
         },
@@ -180,16 +180,10 @@ function M.create(config)
             vim.schedule(function()
                 if result.code == 0 then
                     update_message("success, path: " .. repo_dir, "Error")
-                    if config.on_clone_success then
-                        util.promptYesNo("close window and open it?", function()
-                            layout:unmount()
-                            config.on_clone_success(repo_dir)
-                        end)
-                    else
-                        util.promptYesNo("close window?", function()
-                            layout:unmount()
-                        end)
-                    end
+                    util.promptYesNo("close window and open it?", function()
+                        layout:unmount()
+                        util.open_project(repo_dir)
+                    end)
                 else
                     update_message("failed, reason: " .. result.stderr, "Error")
                     util.promptYesNo("remove local and retry?", function()
@@ -299,6 +293,17 @@ function M.create(config)
         {
             mode = { "i", "n" },
             lhs = "<c-c>",
+            rhs = function()
+                print("close")
+                layout:unmount()
+            end,
+            opts = {
+                desc = "close window"
+            }
+        },
+        {
+            mode = { "i", "n" },
+            lhs = "<Esc>",
             rhs = function()
                 print("close")
                 layout:unmount()

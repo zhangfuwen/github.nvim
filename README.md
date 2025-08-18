@@ -1,16 +1,28 @@
-# nvim-plugin-template
+# github_nvim
 
-Neovim plugin template; includes automatic documentation generation from README, integration tests with Busted, and linting with Stylua
 
 ## Usage
 
-1. Click `use this template` button generate a repo on your github.
-2. Clone your plugin repo. Open terminal then cd plugin directory.
-3. Run `python3 rename.py your-plugin-name`. This will replace all `nvim-plugin-template` to your `plugin-name`. 
-   Then it will prompt you input `y` or `n` to remove example codes in `init.lua` and
-   `test/plugin_spec.lua`. If you are familiar this repo just input `y`. If you are looking at this template for the first time I suggest you inspect the contents. After this step `rename.py` will also auto-remove.
 
-Now you have a clean plugin environment. Enjoy!
+```lua
+
+github_nvim = require("github_nvim")
+github_nvim.setup({})
+require('telescope').load_extension('github_repos')
+
+vim.keymap.set("n", "<leader>ghr", function()
+    vim.cmd("Telescope github_repos")
+end, { desc = "List github repos", buffer = bufnr })
+
+vim.keymap.set("n", "<leader>ghc", function()
+    require("github_nvim").clone()
+end, { desc = "Clone a github repo", buffer = bufnr })
+
+vim.keymap.set("n", "<leader>ghn", function()
+    require("github_nvim").create()
+end, { desc = "New github repo", buffer = bufnr })
+
+```
 
 ## Format
 

@@ -1,7 +1,6 @@
 local sep = vim.fn.has("win32") == 1 and "\\" or "/"
 local home = vim.env.HOME or os.getenv("HOME")
 local defaults = {
-    on_clone_success = nil,  -- function(local_path)
     sep = sep,
     home = home,
     github_dir = home .. sep .. "Code" .. sep .. "github.com",

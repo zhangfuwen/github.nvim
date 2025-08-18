@@ -5,6 +5,6 @@
 -- }
 return {
   exports = {
-    github_repos = require('github_nvim.pickers.github_repos')
+    github_repos = require('github_nvim.pickers.github_repos').pick
   }
 }
