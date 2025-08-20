@@ -1,4 +1,4 @@
-util = require("github_nvim.util")
+local util = require("github_nvim.util")
 
 M = {}
 --gh repo create github.nvim --template nvimdev/nvim-plugin-template --public --clone
@@ -172,8 +172,19 @@ function M.create(config)
             util.mkdir_p(user_dir)
         end
 
-        local clone_command = "gh repo clone " .. user_name .. config.sep .. repo_name
-        message = "running command " .. clone_command .. " ..."
+--gh repo create github.nvim --template nvimdev/nvim-plugin-template --public --clone
+        local create_command = "gh repo create " .. repo_name
+        if use_template then
+            create_command = create_command .. " --template " .. template_input
+        end
+        if is_repo_public then
+            create_command = create_command .. " --public"
+        end
+        if will_clone then
+            create_command = create_command .. " --clone"
+        end
+
+        message = "running command " .. create_command .. " ..."
         update_status()
 
         local function on_command_exit(result)
@@ -196,7 +207,7 @@ function M.create(config)
         end
 
 
-        vim.system({ "bash", "-c", clone_command }, {
+        vim.system({ "bash", "-c", create_command }, {
             text = true,
             cwd = user_dir,
         }, on_command_exit)
@@ -224,7 +235,7 @@ function M.create(config)
         update_status()
 
         print(string.format("repo: %s, visibility: %s", repo_input, is_repo_public and "public" or "private"))
-        do_clone(user_name, repo_name)
+        do_create(user_name, repo_name)
     end
 
 

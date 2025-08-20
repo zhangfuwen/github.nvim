@@ -14,13 +14,51 @@ function M.mkdir_p(path)
 end
 
 function M.open_project(dir)
-    vim.cmd("Telescope find_files cwd="..dir)
+    vim.cmd("cd " .. dir)
+    vim.cmd("Telescope find_files cwd=" .. dir)
 end
 
 function M.rm_rf(path)
     local cmd = "rm -rf " .. path
     local result = vim.system({ "bash", "-c", cmd }):wait()
     return result.code
+end
+
+function M.write_obj(filepath, data)
+    local content = vim.json.encode(data)
+    return M.write_text(filepath, content)
+end
+
+function M.write_text(filepath, content)
+    -- Expand path safely
+    local expanded_path = vim.fn.expand(filepath)
+    if expanded_path == "" then
+        print("❌ Invalid file path")
+        return false, "Invalid path"
+    end
+
+    -- Use vim.loop for safe file operations
+    local fd, err = vim.loop.fs_open(expanded_path, "w", 438) -- 438 = 0666
+    if not fd then
+        print("❌ Failed to open file:", err)
+        return false, err
+    end
+
+    local bytes_written, err = vim.loop.fs_write(fd, content, -1)
+    if not bytes_written then
+        print("❌ Failed to write:", err)
+        vim.loop.fs_close(fd)
+        return false, err
+    end
+
+    local ok, err = vim.loop.fs_close(fd)
+    if not ok then
+        print("❌ Failed to close:", err)
+        return false, err
+    end
+
+    print("✅ Successfully wrote", bytes_written, "bytes to", filepath)
+    return true
 end
 
 function M.mysplit(inputstr, sep)
@@ -191,6 +229,5 @@ function M.get_github_repos()
 
     return items
 end
-
 
 return M

@@ -35,6 +35,7 @@ end
 local finders = require('telescope.finders')
 local pickers = require("telescope.pickers")
 local action_state = require('telescope.actions.state')
+local actions = require('telescope.actions')
 local current_prompt_bufnr = 0
 local filter = "all" -- local, remote
 
@@ -80,6 +81,7 @@ local finder = finders.new_table({
 })
 
 local function selection_open_project()
+    actions._close(current_prompt_bufnr, true)
     local selection = action_state.get_selected_entry()
     local github_dir = config.github_dir
     local sep = config.sep

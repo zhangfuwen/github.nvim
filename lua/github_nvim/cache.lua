@@ -102,24 +102,11 @@ function M.save(cache_name, key, results, ttl)
         ttl = ttl or DEFAULT_TTL,
     }
 
---    print("save results: ", vim.inspect(results))
---    print("data: ", vim.inspect(data))
-
-    local f = io.open(file, "w")
-    if not f then
+    local success = util.write_text(file, vim.json.encode(data))
+    if not success then
         print("❌ Failed to write cache file:", file)
         return
     end
-    print("file is: ", vim.inspect(file))
-
-    local content = vim.json.encode(data)
---    print("content is " .. content)
-    local err = f:write(content)
-    print(vim.inspect(err))
-    if err then
-        print("failed to write to file, msg:", err)
-    end
-    f:close()
 
     -- Optional: cleanup after save
     M.cleanup(cache_name)
