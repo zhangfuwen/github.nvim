@@ -1,10 +1,11 @@
 # github_nvim
 
+A neovim plugin to manage github repos. It uses github command line tool (gh) to manage github repos 
+so make sure you have gh installed and authorized.
+
 
 ## Usage
 
-
-```lua
 
 github_nvim = require("github_nvim")
 github_nvim.setup({})
@@ -12,7 +13,7 @@ require('telescope').load_extension('github_repos')
 
 vim.keymap.set("n", "<leader>ghr", function()
     vim.cmd("Telescope github_repos")
-end, { desc = "List github repos", buffer = bufnr })
+end, { desc = "List github repos(for clone or open)", buffer = bufnr })
 
 vim.keymap.set("n", "<leader>ghc", function()
     require("github_nvim").clone()
