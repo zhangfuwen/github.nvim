@@ -1,4 +1,4 @@
-# github_nvim
+## github_nvim
 
 A neovim plugin to manage github repos. It uses github command line tool (gh) to manage github repos 
 so make sure you have gh installed and authorized.
@@ -6,7 +6,7 @@ so make sure you have gh installed and authorized.
 
 ## Usage
 
-
+```lua
 github_nvim = require("github_nvim")
 github_nvim.setup({})
 require('telescope').load_extension('github_repos')
@@ -28,26 +28,26 @@ end, { desc = "New github repo", buffer = bufnr })
 for those who are using lazy to manage plugins:
 
 ```lua
-    {
-        'zhangfuwen/github.nvim',
-        config = function()
-            local github_nvim = require("github_nvim")
-            github_nvim.setup({})
-            require('telescope').load_extension('github_repos')
+{
+    'zhangfuwen/github.nvim',
+    config = function()
+        local github_nvim = require("github_nvim")
+        github_nvim.setup({})
+        require('telescope').load_extension('github_repos')
 
-            vim.keymap.set("n", "<leader>ghr", function()
-                vim.cmd("Telescope github_repos")
-            end, { desc = "List github repos", buffer = bufnr })
+        vim.keymap.set("n", "<leader>ghr", function()
+            vim.cmd("Telescope github_repos")
+        end, { desc = "List github repos", buffer = bufnr })
 
-            vim.keymap.set("n", "<leader>ghc", function()
-                require("github_nvim").clone()
-            end, { desc = "Clone a github repo", buffer = bufnr })
+        vim.keymap.set("n", "<leader>ghc", function()
+            require("github_nvim").clone()
+        end, { desc = "Clone a github repo", buffer = bufnr })
 
-            vim.keymap.set("n", "<leader>ghn", function()
-                require("github_nvim").create()
-            end, { desc = "New github repo", buffer = bufnr })
-        end
-    },
+        vim.keymap.set("n", "<leader>ghn", function()
+            require("github_nvim").create()
+        end, { desc = "New github repo", buffer = bufnr })
+    end
+},
 
 ```
 
