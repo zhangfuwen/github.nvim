@@ -8,6 +8,7 @@ function M.create(config)
     local is_repo_public = true
     local will_clone = true
     local use_template = false
+    local add_readme = true
     local repo_input = ""
     local template_input = ""
     local message = "no message"
@@ -131,21 +132,28 @@ function M.create(config)
         line:render(bufnr, ns_id, linenr_start)
 
         line = NuiLine()
-        line:append("  Clone after creation: ")
-        line:append(will_clone and "yes" or "no", "Error")
-        line:append(" <c-o>", "SpecialKey")
+        line:append("  add readme:")
+        line:append(add_readme and "yes" or "no", "Error")
+        line:append(" <c-r>", "SpecialKey")
         bufnr, ns_id, linenr_start = popup_one.bufnr, -1, 4
         line:render(bufnr, ns_id, linenr_start)
 
+        line = NuiLine()
+        line:append("  Clone after creation: ")
+        line:append(will_clone and "yes" or "no", "Error")
+        line:append(" <c-o>", "SpecialKey")
+        bufnr, ns_id, linenr_start = popup_one.bufnr, -1, 5
+        line:render(bufnr, ns_id, linenr_start)
+
         --NuiLine({ NuiText("one"), NuiText("two", "Error")}):render(bufnr, ns_id, 3)
-        NuiLine({ NuiText("") }):render(bufnr, ns_id, 5)
+        NuiLine({ NuiText("") }):render(bufnr, ns_id, 6)
         NuiLine({ NuiText("Message: "), NuiText(string.gsub(message, "\n", ""), messageHighlight) }):render(bufnr, ns_id,
-            6)
-        NuiLine({ NuiText("") }):render(bufnr, ns_id, 7)
+            7)
+        NuiLine({ NuiText("") }):render(bufnr, ns_id, 8)
 
         line = NuiLine()
         line:append("Keymaps: ")
-        bufnr, ns_id, linenr_start = popup_one.bufnr, -1, 8
+        bufnr, ns_id, linenr_start = popup_one.bufnr, -1, 9
         line:render(bufnr, ns_id, linenr_start)
     end
 
@@ -182,6 +190,10 @@ function M.create(config)
         end
         if will_clone then
             create_command = create_command .. " --clone"
+        end
+
+        if add_readme then
+            create_command = create_command .. " --add-readme"
         end
 
         message = "running command " .. create_command .. " ..."
@@ -263,6 +275,18 @@ function M.create(config)
             end,
             opts = {
                 desc = "change clone"
+            }
+
+        },
+        {
+            mode = { "i", "n" },
+            lhs = "<c-r>",
+            rhs = function()
+                add_readme = not add_readme
+                update_status()
+            end,
+            opts = {
+                desc = "toggle add readme"
             }
 
         },
